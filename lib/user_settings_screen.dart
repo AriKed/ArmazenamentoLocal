@@ -11,9 +11,13 @@ class UserSettingsScreen extends StatefulWidget {
 class _UserSettingsScreenState extends State<UserSettingsScreen> {
   static const String userNameKey = 'username';
   static const String userAgeKey = 'user_age';
+  static const String countryKey = 'country';
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
+
+  String countryEmoji = ""; // Correção: Variável para armazenar o emoji do país
 
   @override
   void initState() {
@@ -24,7 +28,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Configurações do user")),
+      appBar: AppBar(title: Text("Configurações do Usuário")),
       body: _buildUserSettingsScreenBody(),
     );
   }
@@ -33,24 +37,34 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _nameController.text = prefs.getString(userNameKey) ?? "";
-      _ageController.text = prefs.getInt('user_age')?.toString() ?? "";
+      _ageController.text = prefs.getInt(userAgeKey)?.toString() ?? "";
+      _countryController.text = prefs.getString(countryKey) ?? "";
+      countryEmoji = _getCountryFlagEmoji(_countryController.text);
     });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Dados Carregados!')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Dados Carregados!')),
+    );
   }
 
   Future<void> _saveUserData() async {
     String user = _nameController.text;
     int age = int.tryParse(_ageController.text) ?? 0;
-
-    // "FUTURE"
+    String country = _countryController.text;
 
     final preferences = await SharedPreferences.getInstance();
 
-    await preferences.setInt(userAgeKey, age);
     await preferences.setString(userNameKey, user);
+    await preferences.setInt(userAgeKey, age);
+    await preferences.setString(countryKey, country);
+  }
+
+  String _getCountryFlagEmoji(String countryCode) {
+    if (countryCode.length != 2) return "";
+    return String.fromCharCodes([
+      countryCode.codeUnitAt(0) + 0x1F1E6 - 65,
+      countryCode.codeUnitAt(1) + 0x1F1E6 - 65
+    ]);
   }
 
   _buildUserSettingsScreenBody() {
@@ -67,6 +81,20 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
             controller: _ageController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: 'Idade'),
+          ),
+          TextField(
+            controller: _countryController,
+            decoration: InputDecoration(
+              labelText: 'País',
+              suffixIcon: countryEmoji.isNotEmpty
+                  ? Text(countryEmoji, style: TextStyle(fontSize: 24))
+                  : null,
+            ),
+            onChanged: (value) {
+              setState(() {
+                countryEmoji = _getCountryFlagEmoji(value.toUpperCase());
+              });
+            },
           ),
           SizedBox(height: 20),
           Row(
